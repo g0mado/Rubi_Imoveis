@@ -143,14 +143,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('Received property data:', req.body);
       
-      // Convert string numbers to proper types
+      // Process data - keep price and area as strings, convert others to numbers
       const processedData = {
         ...req.body,
-        price: req.body.price ? parseFloat(req.body.price) : 0,
-        area: req.body.area ? parseFloat(req.body.area) : null,
-        bedrooms: req.body.bedrooms ? parseInt(req.body.bedrooms) : null,
-        bathrooms: req.body.bathrooms ? parseInt(req.body.bathrooms) : null,
-        parkingSpaces: req.body.parkingSpaces ? parseInt(req.body.parkingSpaces) : null,
+        price: req.body.price || "0",
+        area: req.body.area || undefined,
+        bedrooms: req.body.bedrooms ? parseInt(req.body.bedrooms) : undefined,
+        bathrooms: req.body.bathrooms ? parseInt(req.body.bathrooms) : undefined,
+        parkingSpaces: req.body.parkingSpaces ? parseInt(req.body.parkingSpaces) : undefined,
       };
       
       console.log('Processed property data:', processedData);
@@ -167,8 +167,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const property = await storage.createProperty({
         ...validatedData,
-        price: validatedData.price.toString(),
-        area: validatedData.area ? validatedData.area.toString() : undefined,
         images
       });
       
@@ -184,10 +182,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('Received update data:', req.body);
       
-      // Convert string numbers to proper types
+      // Process data - keep price and area as strings, convert others to numbers
       const processedData: any = { ...req.body };
-      if (req.body.price) processedData.price = parseFloat(req.body.price);
-      if (req.body.area) processedData.area = parseFloat(req.body.area);
       if (req.body.bedrooms) processedData.bedrooms = parseInt(req.body.bedrooms);
       if (req.body.bathrooms) processedData.bathrooms = parseInt(req.body.bathrooms);
       if (req.body.parkingSpaces) processedData.parkingSpaces = parseInt(req.body.parkingSpaces);
@@ -209,8 +205,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const property = await storage.updateProperty(req.params.id, {
         ...validatedData,
-        price: validatedData.price ? validatedData.price.toString() : undefined,
-        area: validatedData.area ? validatedData.area.toString() : undefined,
         images: images.length > 0 ? images : undefined
       });
       
