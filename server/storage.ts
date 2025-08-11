@@ -2,12 +2,15 @@ import {
   properties, 
   users, 
   favorites,
+  admins,
   type Property, 
   type InsertProperty,
   type User,
   type InsertUser,
   type Favorite,
-  type InsertFavorite
+  type InsertFavorite,
+  type Admin,
+  type InsertAdmin
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, ilike, gte, lte, inArray } from "drizzle-orm";
@@ -36,6 +39,15 @@ export interface IStorage {
   addFavorite(favorite: InsertFavorite): Promise<Favorite>;
   removeFavorite(propertyId: string, sessionId: string): Promise<void>;
   isFavorite(propertyId: string, sessionId: string): Promise<boolean>;
+  
+  // Admin methods
+  getAdmin(id: string): Promise<Admin | undefined>;
+  getAdminByEmail(email: string): Promise<Admin | undefined>;
+  getAllAdmins(): Promise<Admin[]>;
+  createAdmin(admin: InsertAdmin): Promise<Admin>;
+  updateAdmin(id: string, admin: Partial<InsertAdmin>): Promise<Admin>;
+  deleteAdmin(id: string): Promise<void>;
+  toggleAdminStatus(id: string, isActive: boolean): Promise<Admin>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -164,6 +176,48 @@ export class DatabaseStorage implements IStorage {
         eq(favorites.sessionId, sessionId)
       ));
     return !!favorite;
+  }
+
+  // Admin methods
+  async getAdmin(id: string): Promise<Admin | undefined> {
+    const [admin] = await db.select().from(admins).where(eq(admins.id, id));
+    return admin || undefined;
+  }
+
+  async getAdminByEmail(email: string): Promise<Admin | undefined> {
+    const [admin] = await db.select().from(admins).where(eq(admins.email, email));
+    return admin || undefined;
+  }
+
+  async getAllAdmins(): Promise<Admin[]> {
+    return await db.select().from(admins).orderBy(asc(admins.createdAt));
+  }
+
+  async createAdmin(admin: InsertAdmin): Promise<Admin> {
+    const [newAdmin] = await db.insert(admins).values(admin).returning();
+    return newAdmin;
+  }
+
+  async updateAdmin(id: string, admin: Partial<InsertAdmin>): Promise<Admin> {
+    const [updatedAdmin] = await db
+      .update(admins)
+      .set(admin)
+      .where(eq(admins.id, id))
+      .returning();
+    return updatedAdmin;
+  }
+
+  async deleteAdmin(id: string): Promise<void> {
+    await db.delete(admins).where(eq(admins.id, id));
+  }
+
+  async toggleAdminStatus(id: string, isActive: boolean): Promise<Admin> {
+    const [updatedAdmin] = await db
+      .update(admins)
+      .set({ isActive })
+      .where(eq(admins.id, id))
+      .returning();
+    return updatedAdmin;
   }
 }
 

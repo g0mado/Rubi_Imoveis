@@ -30,7 +30,7 @@ export default function AdminDashboard() {
   const [selectedProperty, setSelectedProperty] = useState<Property | undefined>();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -97,7 +97,7 @@ export default function AdminDashboard() {
   const filteredProperties = properties.filter(property => {
     const matchesSearch = property.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          property.location.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = !statusFilter || property.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' || property.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -132,9 +132,13 @@ export default function AdminDashboard() {
               <TrendingUp className="mr-3" size={20} />
               Dashboard
             </div>
-            <div className="flex items-center px-4 py-3 text-gray-300">
+            <div className="flex items-center px-4 py-3 text-gray-300 hover:text-ruby-500 hover:bg-ruby-900 hover:bg-opacity-20 rounded-lg cursor-pointer">
               <Home className="mr-3" size={20} />
               Imóveis ({stats.total})
+            </div>
+            <div className="flex items-center px-4 py-3 text-gray-300 hover:text-ruby-500 hover:bg-ruby-900 hover:bg-opacity-20 rounded-lg cursor-pointer" onClick={() => setLocation("/admin/users")}>
+              <Settings className="mr-3" size={20} />
+              Administradores
             </div>
           </nav>
         </div>
@@ -243,7 +247,7 @@ export default function AdminDashboard() {
                       <SelectValue placeholder="Todos os status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todos os status</SelectItem>
+                      <SelectItem value="all">Todos os status</SelectItem>
                       <SelectItem value="disponivel">Disponível</SelectItem>
                       <SelectItem value="vendido">Vendido</SelectItem>
                     </SelectContent>

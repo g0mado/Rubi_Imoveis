@@ -2,7 +2,7 @@ import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertPropertySchema, insertUserSchema } from "@shared/schema";
+import { insertPropertySchema, insertUserSchema, insertAdminSchema } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import multer from "multer";
@@ -70,23 +70,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, password } = req.body;
       
-      // Check for default admin credentials
-      if (email === 'administrador@administrador.com' && password === 'Adm123456789') {
-        const token = jwt.sign(
-          { id: 'admin', email: 'administrador@administrador.com' },
-          JWT_SECRET,
-          { expiresIn: '24h' }
-        );
-        
-        res.json({
-          token,
-          user: { id: 'admin', email: 'administrador@administrador.com' }
-        });
-      } else {
-        res.status(401).json({ message: 'Credenciais inválidas' });
+      const admin = await storage.getAdminByEmail(email);
+      if (!admin) {
+        return res.status(401).json({ message: "Credenciais inválidas" });
       }
+      
+      if (!admin.isActive) {
+        return res.status(401).json({ message: "Conta desativada" });
+      }
+      
+      const passwordMatch = await bcrypt.compare(password, admin.password);
+      if (!passwordMatch) {
+        return res.status(401).json({ message: "Credenciais inválidas" });
+      }
+      
+      const token = jwt.sign({ 
+        id: admin.id, 
+        email: admin.email, 
+        role: admin.role, 
+        permissions: admin.permissions 
+      }, JWT_SECRET, { expiresIn: '24h' });
+      
+      res.json({ 
+        token, 
+        admin: {
+          id: admin.id,
+          name: admin.name,
+          email: admin.email,
+          role: admin.role,
+          permissions: admin.permissions
+        }
+      });
     } catch (error) {
-      res.status(500).json({ message: 'Erro interno do servidor' });
+      res.status(500).json({ message: "Erro interno do servidor" });
     }
   });
 
@@ -262,6 +278,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ isFavorite });
     } catch (error) {
       res.status(500).json({ message: 'Erro ao verificar favorito' });
+    }
+  });
+
+  // Admin management routes
+  
+  // Get all admins (super admin only)
+  app.get("/api/admins", authenticateAdmin, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'super_admin') {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      const admins = await storage.getAllAdmins();
+      const adminsWithoutPasswords = admins.map(admin => ({
+        ...admin,
+        password: undefined
+      }));
+      res.json(adminsWithoutPasswords);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao buscar administradores" });
+    }
+  });
+
+  // Create new admin (super admin only)
+  app.post("/api/admins", authenticateAdmin, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'super_admin') {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      const validatedData = insertAdminSchema.parse(req.body);
+      const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+      
+      const admin = await storage.createAdmin({
+        ...validatedData,
+        password: hashedPassword,
+        createdBy: req.user.id
+      });
+      
+      res.status(201).json({
+        ...admin,
+        password: undefined
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao criar administrador" });
+    }
+  });
+
+  // Update admin (super admin only)
+  app.put("/api/admins/:id", authenticateAdmin, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'super_admin') {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      const { password, ...updateData } = req.body;
+      const finalData = password ? 
+        { ...updateData, password: await bcrypt.hash(password, 10) } : 
+        updateData;
+      
+      const admin = await storage.updateAdmin(req.params.id, finalData);
+      res.json({
+        ...admin,
+        password: undefined
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao atualizar administrador" });
+    }
+  });
+
+  // Toggle admin status (super admin only)
+  app.patch("/api/admins/:id/status", authenticateAdmin, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'super_admin') {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+      
+      const { isActive } = req.body;
+      const admin = await storage.toggleAdminStatus(req.params.id, isActive);
+      
+      res.json({
+        ...admin,
+        password: undefined
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao alterar status do administrador" });
+    }
+  });
+
+  // Delete admin (super admin only)
+  app.delete("/api/admins/:id", authenticateAdmin, async (req: any, res) => {
+    try {
+      if (req.user.role !== 'super_admin' || req.user.id === req.params.id) {
+        return res.status(403).json({ message: "Não é possível excluir a própria conta" });
+      }
+      
+      await storage.deleteAdmin(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao excluir administrador" });
     }
   });
 

@@ -7,6 +7,7 @@ import Home from "@/pages/home";
 import PropertyDetail from "@/pages/property-detail";
 import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
+import AdminUsers from "@/pages/admin-users";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/property/:id" component={PropertyDetail} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
+      <Route path="/admin/users" component={AdminUsers} />
       <Route component={NotFound} />
     </Switch>
   );
