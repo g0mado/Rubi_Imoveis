@@ -1,0 +1,270 @@
+import type { Express } from "express";
+import express from "express";
+import { createServer, type Server } from "http";
+import { storage } from "./storage";
+import { insertPropertySchema, insertUserSchema } from "@shared/schema";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
+// JWT secret - in production, use environment variable
+const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
+
+// Configure multer for image uploads
+const uploadDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: uploadDir,
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+  }),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+    files: 12 // max 12 files
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  }
+});
+
+// Middleware to verify JWT token
+const authenticateAdmin = (req: any, res: any, next: any) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  
+  if (!token) {
+    return res.status(401).json({ message: 'Token não fornecido' });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.status(401).json({ message: 'Token inválido' });
+  }
+};
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  
+  // Serve uploaded images
+  app.use('/uploads', (req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    next();
+  });
+  app.use('/uploads', express.static(uploadDir));
+
+  // Admin login
+  app.post("/api/admin/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      // Check for default admin credentials
+      if (email === 'administrador@administrador.com' && password === 'Adm123456789') {
+        const token = jwt.sign(
+          { id: 'admin', email: 'administrador@administrador.com' },
+          JWT_SECRET,
+          { expiresIn: '24h' }
+        );
+        
+        res.json({
+          token,
+          user: { id: 'admin', email: 'administrador@administrador.com' }
+        });
+      } else {
+        res.status(401).json({ message: 'Credenciais inválidas' });
+      }
+    } catch (error) {
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  // Get all properties with filters
+  app.get("/api/properties", async (req, res) => {
+    try {
+      const { type, location, minPrice, maxPrice, status } = req.query;
+      
+      const filters: any = {};
+      if (type) filters.type = type as string;
+      if (location) filters.location = location as string;
+      if (minPrice) filters.minPrice = parseFloat(minPrice as string);
+      if (maxPrice) filters.maxPrice = parseFloat(maxPrice as string);
+      if (status) filters.status = status as string;
+      
+      const properties = await storage.getProperties(filters);
+      res.json(properties);
+    } catch (error) {
+      res.status(500).json({ message: 'Erro ao buscar imóveis' });
+    }
+  });
+
+  // Get single property
+  app.get("/api/properties/:id", async (req, res) => {
+    try {
+      const property = await storage.getProperty(req.params.id);
+      if (!property) {
+        return res.status(404).json({ message: 'Imóvel não encontrado' });
+      }
+      res.json(property);
+    } catch (error) {
+      res.status(500).json({ message: 'Erro ao buscar imóvel' });
+    }
+  });
+
+  // Create property (admin only)
+  app.post("/api/properties", authenticateAdmin, upload.array('images', 12), async (req, res) => {
+    try {
+      const validatedData = insertPropertySchema.parse(req.body);
+      
+      // Handle uploaded images
+      const images: string[] = [];
+      if (req.files && Array.isArray(req.files)) {
+        for (const file of req.files) {
+          images.push(`/uploads/${file.filename}`);
+        }
+      }
+      
+      const property = await storage.createProperty({
+        ...validatedData,
+        price: validatedData.price.toString(),
+        area: validatedData.area ? validatedData.area.toString() : undefined,
+        images
+      });
+      
+      res.status(201).json(property);
+    } catch (error) {
+      res.status(400).json({ message: 'Dados inválidos', error });
+    }
+  });
+
+  // Update property (admin only)
+  app.put("/api/properties/:id", authenticateAdmin, upload.array('images', 12), async (req, res) => {
+    try {
+      const validatedData = insertPropertySchema.partial().parse(req.body);
+      
+      // Handle uploaded images
+      let images: string[] = [];
+      if (req.files && Array.isArray(req.files)) {
+        for (const file of req.files) {
+          images.push(`/uploads/${file.filename}`);
+        }
+      }
+      
+      // If no new images, keep existing ones
+      if (images.length === 0 && req.body.existingImages) {
+        images = JSON.parse(req.body.existingImages);
+      }
+      
+      const property = await storage.updateProperty(req.params.id, {
+        ...validatedData,
+        price: validatedData.price ? validatedData.price.toString() : undefined,
+        area: validatedData.area ? validatedData.area.toString() : undefined,
+        images: images.length > 0 ? images : undefined
+      });
+      
+      res.json(property);
+    } catch (error) {
+      res.status(400).json({ message: 'Erro ao atualizar imóvel', error });
+    }
+  });
+
+  // Delete property (admin only)
+  app.delete("/api/properties/:id", authenticateAdmin, async (req, res) => {
+    try {
+      await storage.deleteProperty(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: 'Erro ao deletar imóvel' });
+    }
+  });
+
+  // Get session ID (for anonymous users)
+  app.get("/api/session", (req, res) => {
+    // Generate or get session ID from cookies
+    let sessionId = req.headers['x-session-id'] as string;
+    if (!sessionId) {
+      sessionId = Date.now().toString() + Math.random().toString(36).substr(2);
+    }
+    res.json({ sessionId });
+  });
+
+  // Get user favorites
+  app.get("/api/favorites", async (req, res) => {
+    try {
+      const sessionId = req.headers['x-session-id'] as string;
+      if (!sessionId) {
+        return res.status(400).json({ message: 'Session ID requerido' });
+      }
+      
+      const favorites = await storage.getFavorites(sessionId);
+      res.json(favorites);
+    } catch (error) {
+      res.status(500).json({ message: 'Erro ao buscar favoritos' });
+    }
+  });
+
+  // Add favorite
+  app.post("/api/favorites", async (req, res) => {
+    try {
+      const sessionId = req.headers['x-session-id'] as string;
+      const { propertyId } = req.body;
+      
+      if (!sessionId || !propertyId) {
+        return res.status(400).json({ message: 'Session ID e Property ID são requeridos' });
+      }
+      
+      const favorite = await storage.addFavorite({ propertyId, sessionId });
+      res.status(201).json(favorite);
+    } catch (error) {
+      res.status(400).json({ message: 'Erro ao adicionar favorito' });
+    }
+  });
+
+  // Remove favorite
+  app.delete("/api/favorites/:propertyId", async (req, res) => {
+    try {
+      const sessionId = req.headers['x-session-id'] as string;
+      const { propertyId } = req.params;
+      
+      if (!sessionId) {
+        return res.status(400).json({ message: 'Session ID requerido' });
+      }
+      
+      await storage.removeFavorite(propertyId, sessionId);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: 'Erro ao remover favorito' });
+    }
+  });
+
+  // Check if property is favorite
+  app.get("/api/favorites/:propertyId/check", async (req, res) => {
+    try {
+      const sessionId = req.headers['x-session-id'] as string;
+      const { propertyId } = req.params;
+      
+      if (!sessionId) {
+        return res.json({ isFavorite: false });
+      }
+      
+      const isFavorite = await storage.isFavorite(propertyId, sessionId);
+      res.json({ isFavorite });
+    } catch (error) {
+      res.status(500).json({ message: 'Erro ao verificar favorito' });
+    }
+  });
+
+  const httpServer = createServer(app);
+  return httpServer;
+}

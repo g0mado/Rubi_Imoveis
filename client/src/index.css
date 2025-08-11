@@ -1,0 +1,146 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(210 25% 7.8431%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(210 25% 7.8431%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(210 25% 7.8431%);
+  --primary: hsl(356 78.57% 39.8%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(210 25% 7.8431%);
+  --secondary-foreground: hsl(0 0% 100%);
+  --muted: hsl(210 40% 96%);
+  --muted-foreground: hsl(215.4 16.3% 46.9%);
+  --accent: hsl(210 40% 96%);
+  --accent-foreground: hsl(222.2 84% 4.9%);
+  --destructive: hsl(0 84.2% 60.2%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --border: hsl(214.3 31.8% 91.4%);
+  --input: hsl(214.3 31.8% 91.4%);
+  --ring: hsl(356 78.57% 39.8%);
+  --chart-1: hsl(356 78.57% 39.8%);
+  --chart-2: hsl(159.7826 100% 36.0784%);
+  --chart-3: hsl(42.0290 92.8251% 56.2745%);
+  --chart-4: hsl(147.1429 78.5047% 41.9608%);
+  --chart-5: hsl(341.4894 75.2000% 50.9804%);
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: 'Playfair Display', serif;
+  --font-accent: 'Cormorant Garamond', serif;
+  --radius: 0.75rem;
+  
+  /* Ruby colors */
+  --ruby-50: hsl(0 86% 97%);
+  --ruby-100: hsl(0 86% 94%);
+  --ruby-500: hsl(0 78% 55%);
+  --ruby-600: hsl(356 78% 43%);
+  --ruby-700: hsl(356 78% 39%);
+  --ruby-800: hsl(356 85% 33%);
+  --ruby-900: hsl(356 92% 25%);
+  
+  /* Gold colors */
+  --gold-500: hsl(51 93% 53%);
+  --gold-600: hsl(45 93% 47%);
+}
+
+.dark {
+  --background: hsl(222.2 84% 4.9%);
+  --foreground: hsl(210 40% 98%);
+  --card: hsl(222.2 84% 4.9%);
+  --card-foreground: hsl(210 40% 98%);
+  --popover: hsl(222.2 84% 4.9%);
+  --popover-foreground: hsl(210 40% 98%);
+  --primary: hsl(356 78.57% 39.8%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(217.2 32.6% 17.5%);
+  --secondary-foreground: hsl(210 40% 98%);
+  --muted: hsl(217.2 32.6% 17.5%);
+  --muted-foreground: hsl(215 20.2% 65.1%);
+  --accent: hsl(217.2 32.6% 17.5%);
+  --accent-foreground: hsl(210 40% 98%);
+  --destructive: hsl(0 62.8% 30.6%);
+  --destructive-foreground: hsl(210 40% 98%);
+  --border: hsl(217.2 32.6% 17.5%);
+  --input: hsl(217.2 32.6% 17.5%);
+  --ring: hsl(356 78.57% 39.8%);
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: 'Playfair Display', serif;
+  --font-accent: 'Cormorant Garamond', serif;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+}
+
+@layer components {
+  .ruby-gradient {
+    background: linear-gradient(135deg, var(--ruby-700) 0%, var(--ruby-900) 100%);
+  }
+  
+  .gold-gradient {
+    background: linear-gradient(135deg, var(--gold-500) 0%, var(--gold-600) 100%);
+  }
+  
+  .glass-effect {
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  .property-card {
+    @apply transition-all duration-300 ease-out;
+  }
+  
+  .property-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(185, 28, 28, 0.15);
+  }
+  
+  .heart-icon {
+    @apply transition-all duration-300 ease-out;
+  }
+  
+  .heart-icon:hover {
+    transform: scale(1.2);
+  }
+}
+
+@layer utilities {
+  .text-ruby-50 { color: var(--ruby-50); }
+  .text-ruby-100 { color: var(--ruby-100); }
+  .text-ruby-500 { color: var(--ruby-500); }
+  .text-ruby-600 { color: var(--ruby-600); }
+  .text-ruby-700 { color: var(--ruby-700); }
+  .text-ruby-800 { color: var(--ruby-800); }
+  .text-ruby-900 { color: var(--ruby-900); }
+  
+  .bg-ruby-50 { background-color: var(--ruby-50); }
+  .bg-ruby-100 { background-color: var(--ruby-100); }
+  .bg-ruby-500 { background-color: var(--ruby-500); }
+  .bg-ruby-600 { background-color: var(--ruby-600); }
+  .bg-ruby-700 { background-color: var(--ruby-700); }
+  .bg-ruby-800 { background-color: var(--ruby-800); }
+  .bg-ruby-900 { background-color: var(--ruby-900); }
+  
+  .border-ruby-700 { border-color: var(--ruby-700); }
+  .border-ruby-800 { border-color: var(--ruby-800); }
+  
+  .text-gold-500 { color: var(--gold-500); }
+  .text-gold-600 { color: var(--gold-600); }
+  .bg-gold-500 { background-color: var(--gold-500); }
+  .bg-gold-600 { background-color: var(--gold-600); }
+}
