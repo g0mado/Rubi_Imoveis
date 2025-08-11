@@ -141,7 +141,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create property (admin only)
   app.post("/api/properties", authenticateAdmin, upload.array('images', 12), async (req, res) => {
     try {
-      const validatedData = insertPropertySchema.parse(req.body);
+      console.log('Received property data:', req.body);
+      
+      // Convert string numbers to proper types
+      const processedData = {
+        ...req.body,
+        price: req.body.price ? parseFloat(req.body.price) : 0,
+        area: req.body.area ? parseFloat(req.body.area) : null,
+        bedrooms: req.body.bedrooms ? parseInt(req.body.bedrooms) : null,
+        bathrooms: req.body.bathrooms ? parseInt(req.body.bathrooms) : null,
+        parkingSpaces: req.body.parkingSpaces ? parseInt(req.body.parkingSpaces) : null,
+      };
+      
+      console.log('Processed property data:', processedData);
+      
+      const validatedData = insertPropertySchema.parse(processedData);
       
       // Handle uploaded images
       const images: string[] = [];
@@ -160,14 +174,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json(property);
     } catch (error) {
-      res.status(400).json({ message: 'Dados inválidos', error });
+      console.error('Property creation error:', error);
+      res.status(400).json({ message: 'Dados inválidos', error: error.message || error });
     }
   });
 
   // Update property (admin only)
   app.put("/api/properties/:id", authenticateAdmin, upload.array('images', 12), async (req, res) => {
     try {
-      const validatedData = insertPropertySchema.partial().parse(req.body);
+      console.log('Received update data:', req.body);
+      
+      // Convert string numbers to proper types
+      const processedData: any = { ...req.body };
+      if (req.body.price) processedData.price = parseFloat(req.body.price);
+      if (req.body.area) processedData.area = parseFloat(req.body.area);
+      if (req.body.bedrooms) processedData.bedrooms = parseInt(req.body.bedrooms);
+      if (req.body.bathrooms) processedData.bathrooms = parseInt(req.body.bathrooms);
+      if (req.body.parkingSpaces) processedData.parkingSpaces = parseInt(req.body.parkingSpaces);
+      
+      const validatedData = insertPropertySchema.partial().parse(processedData);
       
       // Handle uploaded images
       let images: string[] = [];
@@ -191,7 +216,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(property);
     } catch (error) {
-      res.status(400).json({ message: 'Erro ao atualizar imóvel', error });
+      console.error('Property update error:', error);
+      res.status(400).json({ message: 'Erro ao atualizar imóvel', error: error.message || error });
     }
   });
 
