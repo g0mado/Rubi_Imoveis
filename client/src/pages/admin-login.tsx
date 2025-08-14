@@ -71,7 +71,6 @@ export default function AdminLogin() {
                       type="email" 
                       {...field} 
                       className="focus:ring-2 focus:ring-ruby-500 focus:border-ruby-500"
-                      readOnly
                     />
                   </FormControl>
                   <FormMessage />
