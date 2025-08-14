@@ -24,7 +24,7 @@ export default function AdminLogin() {
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "administrador@administrador.com",
+      email: "admin@rubiimoveisprime.com",
       password: "",
     },
   });
