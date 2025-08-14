@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,9 @@ export default function AdminPropertyForm({ property, isOpen, onClose }: AdminPr
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Chave para salvar dados do formulário
+  const formStorageKey = `admin-property-form-${property?.id || 'new'}`;
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -51,6 +54,91 @@ export default function AdminPropertyForm({ property, isOpen, onClose }: AdminPr
       parkingSpaces: property?.parkingSpaces?.toString() || "",
     },
   });
+
+  // Salva automaticamente os dados do formulário
+  const saveFormData = (data: any) => {
+    localStorage.setItem(formStorageKey, JSON.stringify(data));
+  };
+
+  // Recupera dados salvos do formulário
+  const loadFormData = () => {
+    try {
+      const savedData = localStorage.getItem(formStorageKey);
+      if (savedData) {
+        return JSON.parse(savedData);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados salvos do formulário:', error);
+    }
+    return null;
+  };
+
+  // Limpa dados salvos do formulário
+  const clearFormData = () => {
+    localStorage.removeItem(formStorageKey);
+  };
+
+  // Carrega dados salvos quando o formulário abre
+  useEffect(() => {
+    if (isOpen && property) {
+      const savedData = loadFormData();
+      if (savedData) {
+        // Pergunta se o usuário quer recuperar os dados salvos
+        const shouldRestore = window.confirm(
+          'Encontramos dados não salvos para este imóvel. Deseja recuperá-los?'
+        );
+        
+        if (shouldRestore) {
+          form.reset(savedData);
+        } else {
+          clearFormData();
+        }
+      }
+    }
+  }, [isOpen, property, form]);
+
+  // Watch para mudanças no formulário e salvar automaticamente
+  const watchedValues = form.watch();
+  useEffect(() => {
+    if (isOpen && property) {
+      // Salva apenas se houver mudanças reais nos dados
+      const hasChanges = Object.keys(watchedValues).some(key => {
+        const currentValue = watchedValues[key as keyof typeof watchedValues];
+        const originalValue = property[key as keyof Property];
+        return currentValue !== originalValue;
+      });
+
+      if (hasChanges) {
+        saveFormData(watchedValues);
+      }
+    }
+  }, [watchedValues, isOpen, property]);
+
+  // Função para verificar se há mudanças não salvas
+  const hasUnsavedChanges = () => {
+    if (!property) return false;
+    return Object.keys(watchedValues).some(key => {
+      const currentValue = watchedValues[key as keyof typeof watchedValues];
+      const originalValue = property[key as keyof Property];
+      return currentValue !== originalValue;
+    });
+  };
+
+  // Função personalizada para fechar com confirmação
+  const handleClose = () => {
+    if (hasUnsavedChanges()) {
+      const shouldClose = window.confirm(
+        'Você tem alterações não salvas. Deseja realmente fechar sem salvar?'
+      );
+      
+      if (shouldClose) {
+        clearFormData();
+        onClose();
+      }
+    } else {
+      onClose();
+    }
+  };
 
   const createMutation = useMutation({
     mutationFn: async (data: FormData) => {
@@ -68,6 +156,7 @@ export default function AdminPropertyForm({ property, isOpen, onClose }: AdminPr
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/properties'] });
       toast({ title: "Imóvel criado com sucesso!" });
+      clearFormData(); // Limpa dados salvos após sucesso
       onClose();
       form.reset();
     },
@@ -98,6 +187,7 @@ export default function AdminPropertyForm({ property, isOpen, onClose }: AdminPr
         notifyPropertyUpdate(property.id);
       }
       toast({ title: "Imóvel atualizado com sucesso!" });
+      clearFormData(); // Limpa dados salvos após sucesso
       onClose();
     },
     onError: () => {
@@ -151,10 +241,18 @@ export default function AdminPropertyForm({ property, isOpen, onClose }: AdminPr
       <Card className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-8">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-serif font-bold text-black">
-              {property ? 'Editar Imóvel' : 'Cadastrar Novo Imóvel'}
-            </h2>
-            <Button variant="ghost" onClick={onClose}>
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-serif font-bold text-black">
+                {property ? 'Editar Imóvel' : 'Cadastrar Novo Imóvel'}
+              </h2>
+              {hasUnsavedChanges() && (
+                <div className="flex items-center gap-2 bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                  Alterações não salvas
+                </div>
+              )}
+            </div>
+            <Button variant="ghost" onClick={handleClose}>
               <X size={24} />
             </Button>
           </div>
