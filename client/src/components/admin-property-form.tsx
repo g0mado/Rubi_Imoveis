@@ -14,6 +14,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { notifyPropertyUpdate } from "@/lib/cache-utils";
 
 const formSchema = insertPropertySchema.extend({
   price: z.string().min(1, "Preço é obrigatório"),
@@ -90,6 +91,12 @@ export default function AdminPropertyForm({ property, isOpen, onClose }: AdminPr
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/properties'] });
+      // Invalida também o cache específico do imóvel na página de detalhes
+      if (property?.id) {
+        queryClient.invalidateQueries({ queryKey: ['/api/properties', property.id] });
+        // Notifica outras abas sobre a atualização
+        notifyPropertyUpdate(property.id);
+      }
       toast({ title: "Imóvel atualizado com sucesso!" });
       onClose();
     },

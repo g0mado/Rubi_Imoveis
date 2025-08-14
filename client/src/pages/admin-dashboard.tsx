@@ -63,9 +63,12 @@ export default function AdminDashboard() {
         }
       });
       if (!response.ok) throw new Error('Failed to delete property');
+      return id; // Retorna o ID para usar no onSuccess
     },
-    onSuccess: () => {
+    onSuccess: (deletedId) => {
       queryClient.invalidateQueries({ queryKey: ['/api/properties'] });
+      // Invalida também o cache específico do imóvel deletado
+      queryClient.invalidateQueries({ queryKey: ['/api/properties', deletedId] });
       toast({ title: "Imóvel excluído com sucesso!" });
     },
     onError: () => {

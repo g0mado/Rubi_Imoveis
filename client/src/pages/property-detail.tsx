@@ -3,13 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Bed, Bath, Car, Ruler, MapPin, Share, Heart, MessageCircle } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import PropertyGallery from "@/components/property-gallery";
 import { Property } from "@shared/schema";
 import { useFavorites } from "@/hooks/use-favorites";
 import { formatCurrency } from "@/lib/price-utils";
+import { setupCacheInvalidationListener } from "@/lib/cache-utils";
 
 export default function PropertyDetail() {
   const { id } = useParams<{ id: string }>();
@@ -17,9 +18,16 @@ export default function PropertyDetail() {
   const [galleryStartIndex, setGalleryStartIndex] = useState(0);
   const { isFavorite, toggleFavorite } = useFavorites();
 
+  // Configurar listener para invalidação de cache entre abas
+  useEffect(() => {
+    setupCacheInvalidationListener();
+  }, []);
+
   const { data: property, isLoading } = useQuery<Property>({
     queryKey: ['/api/properties', id],
     enabled: !!id,
+    staleTime: 0, // Sempre considera os dados como obsoletos
+    refetchOnWindowFocus: true, // Recarrega quando a janela recebe foco
   });
 
   if (isLoading) {
