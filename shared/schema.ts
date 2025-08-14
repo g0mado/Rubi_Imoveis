@@ -42,7 +42,7 @@ export const admins = pgTable("admins", {
   permissions: text("permissions").array().default([]),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
-  createdBy: varchar("created_by").references(() => admins.id),
+  createdBy: varchar("created_by"),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({

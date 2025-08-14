@@ -13,7 +13,7 @@ import {
   type InsertAdmin
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, ilike, gte, lte, inArray } from "drizzle-orm";
+import { eq, and, desc, asc, ilike, gte, lte, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -76,8 +76,6 @@ export class DatabaseStorage implements IStorage {
     maxPrice?: number;
     status?: string;
   }): Promise<Property[]> {
-    let query = db.select().from(properties);
-    
     const conditions = [];
     
     if (filters?.type) {
@@ -100,6 +98,7 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(properties.status, filters.status));
     }
     
+    let query = db.select().from(properties);
     if (conditions.length > 0) {
       query = query.where(and(...conditions));
     }

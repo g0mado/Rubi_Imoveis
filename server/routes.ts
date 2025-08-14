@@ -173,7 +173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(property);
     } catch (error) {
       console.error('Property creation error:', error);
-      res.status(400).json({ message: 'Dados inválidos', error: error.message || error });
+      res.status(400).json({ message: 'Dados inválidos', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -211,7 +211,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(property);
     } catch (error) {
       console.error('Property update error:', error);
-      res.status(400).json({ message: 'Erro ao atualizar imóvel', error: error.message || error });
+      res.status(400).json({ message: 'Erro ao atualizar imóvel', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
