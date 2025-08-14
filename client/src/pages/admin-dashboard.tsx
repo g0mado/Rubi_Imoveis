@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import Logo from "@/components/logo";
 import AdminPropertyForm from "@/components/admin-property-form";
 import { Property } from "@shared/schema";
+import { formatCurrency, formatCompactCurrency } from "@/lib/price-utils";
 
 export default function AdminDashboard() {
   const [, setLocation] = useLocation();
@@ -109,13 +110,7 @@ export default function AdminDashboard() {
     totalValue: properties.reduce((sum, p) => sum + parseFloat(p.price), 0)
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      notation: 'compact'
-    }).format(price);
-  };
+
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -218,7 +213,7 @@ export default function AdminDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Valor Total</p>
-                  <p className="text-3xl font-bold text-gold-500">{formatPrice(stats.totalValue)}</p>
+                  <p className="text-3xl font-bold text-gold-500">{formatCompactCurrency(stats.totalValue)}</p>
                 </div>
                 <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
                   <DollarSign className="text-gold-500" size={24} />
@@ -319,7 +314,7 @@ export default function AdminDashboard() {
                         {property.location}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {formatPrice(parseFloat(property.price))}
+                        {formatCurrency(property.price)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${

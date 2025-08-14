@@ -9,6 +9,7 @@ import Footer from "@/components/footer";
 import PropertyGallery from "@/components/property-gallery";
 import { Property } from "@shared/schema";
 import { useFavorites } from "@/hooks/use-favorites";
+import { formatCurrency } from "@/lib/price-utils";
 
 export default function PropertyDetail() {
   const { id } = useParams<{ id: string }>();
@@ -51,12 +52,7 @@ export default function PropertyDetail() {
     );
   }
 
-  const formatPrice = (price: string) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(parseFloat(price));
-  };
+
 
   const openGallery = (index: number = 0) => {
     setGalleryStartIndex(index);
@@ -64,7 +60,7 @@ export default function PropertyDetail() {
   };
 
   const generateWhatsAppLink = () => {
-    const message = `Olá! Tenho interesse no imóvel: ${property.title} - ${formatPrice(property.price)}. Link: ${window.location.href}`;
+    const message = `Olá! Tenho interesse no imóvel: ${property.title} - ${formatCurrency(property.price)}. Link: ${window.location.href}`;
     return `https://wa.me/5511999999999?text=${encodeURIComponent(message)}`;
   };
 
@@ -104,10 +100,10 @@ export default function PropertyDetail() {
                       alt={`${property.title} - Imagem ${index + 2}`}
                       className="w-full h-full object-cover hover:scale-105 transition-transform"
                     />
-                    {index === 3 && property.images.length > 5 && (
+                    {index === 3 && property.images && property.images.length > 5 && (
                       <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                         <span className="text-white font-semibold">
-                          +{property.images.length - 5} fotos
+                          +{property.images ? property.images.length - 5 : 0} fotos
                         </span>
                       </div>
                     )}
@@ -160,7 +156,7 @@ export default function PropertyDetail() {
               </h1>
 
               <p className="text-3xl font-bold text-ruby-700 mb-6">
-                {formatPrice(property.price)}
+                {formatCurrency(property.price)}
               </p>
 
               {/* Property Features */}

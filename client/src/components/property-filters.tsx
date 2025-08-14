@@ -95,10 +95,10 @@ export default function PropertyFilters({ onFiltersChange }: PropertyFiltersProp
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Sem limite</SelectItem>
-                  <SelectItem value="500000">Até R$ 500.000</SelectItem>
-                  <SelectItem value="1000000">Até R$ 1.000.000</SelectItem>
-                  <SelectItem value="2000000">Até R$ 2.000.000</SelectItem>
-                  <SelectItem value="5000000">Até R$ 5.000.000</SelectItem>
+                  <SelectItem value="500000">Até R$ 500.000,00</SelectItem>
+                  <SelectItem value="1000000">Até R$ 1.000.000,00</SelectItem>
+                  <SelectItem value="2000000">Até R$ 2.000.000,00</SelectItem>
+                  <SelectItem value="5000000">Até R$ 5.000.000,00</SelectItem>
                 </SelectContent>
               </Select>
             </div>

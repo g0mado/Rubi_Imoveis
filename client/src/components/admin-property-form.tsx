@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card } from "@/components/ui/card";
+import { PriceInput } from "@/components/ui/price-input";
 import { X, Upload, Trash2 } from "lucide-react";
 import { insertPropertySchema, type Property } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -106,7 +107,7 @@ export default function AdminPropertyForm({ property, isOpen, onClose }: AdminPr
     formData.append('description', values.description);
     formData.append('location', values.location);
     formData.append('price', values.price);
-    formData.append('status', values.status);
+    formData.append('status', values.status || 'disponivel');
     
     if (values.area) formData.append('area', values.area);
     if (values.bedrooms) formData.append('bedrooms', values.bedrooms);
@@ -223,9 +224,13 @@ export default function AdminPropertyForm({ property, isOpen, onClose }: AdminPr
                   name="price"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Valor (R$) *</FormLabel>
+                      <FormLabel>Valor *</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="850000" {...field} />
+                        <PriceInput 
+                          value={field.value} 
+                          onChange={field.onChange}
+                          placeholder="R$ 850.000,00"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

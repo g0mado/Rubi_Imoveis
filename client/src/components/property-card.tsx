@@ -4,6 +4,7 @@ import { Heart } from "lucide-react";
 import { Link } from "wouter";
 import { Property } from "@shared/schema";
 import { useFavorites } from "@/hooks/use-favorites";
+import { formatCurrency } from "@/lib/price-utils";
 
 interface PropertyCardProps {
   property: Property;
@@ -13,12 +14,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const isFav = isFavorite(property.id);
   
-  const formatPrice = (price: string) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(parseFloat(price));
-  };
+
 
   const getTypeColor = (type: string) => {
     switch (type.toLowerCase()) {
@@ -88,7 +84,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
         
         <div className="flex items-center justify-between">
           <span className="text-2xl font-bold text-ruby-700">
-            {formatPrice(property.price)}
+            {formatCurrency(property.price)}
           </span>
           <Link href={`/property/${property.id}`}>
             <Button className="bg-black text-white hover:bg-gray-800 transition-colors">
